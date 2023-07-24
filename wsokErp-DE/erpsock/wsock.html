@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Example</title>
+    <style>
+    .container {
+      display:flex
+      justify-content:block;
+    }
+
+    .box {
+      border: 5px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+      width: 600px;
+    }
+
+    #sentBox {
+      background:teal;
+      color: white;
+      font-weight: bold;
+    }
+
+    #receivedBox {
+      background:rgb(0, 0, 0);
+      color: white;
+      font-weight: bold;
+      font-size:large;
+    }
+      </style>  
+</head>
+<body>
+    
+    <script type="text/javascript">
+        var currentDomain = window.location.hostname;
+        var socket = new WebSocket("ws://" + currentDomain + ":8080/sock");
+        var sMessage = "Hello, server!";
+        
+        socket.onopen = function(event) {
+            var sentBox = document.getElementById("sentBox");
+            console.log("Connected to WebSocket");
+   //         socket.send(sMessage);
+    // Send a series of random characters
+              setInterval(function() {
+                var ranMessage = generateRandomString(100);
+                socket.send(ranMessage);
+            //    console.log("Sent message: " + ranMessage);
+                }, 10);
+     //       console.log("message sent");
+      //      sentBox.textContent = ranMessage;
+        };
+        
+        socket.onmessage = function(event) {
+            var receivedBox = document.getElementById("receivedBox");
+            var rMessage = event.data;
+      //      console.log("Received message from server: " + rMessage);
+            receivedBox.textContent = rMessage;
+        };
+        
+        socket.onclose = function(event) {
+            console.log("Disconnected from WebSocket");
+        };
+        
+        socket.onerror = function(event) {
+            console.error("WebSocket error: " + event);
+        };
+
+ // Helper function to generate a random string
+ function generateRandomString(length) {
+      var characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      var result = "";
+      for (var i = 0; i < length; i++) {
+        var randomIndex = Math.floor(Math.random() * characters.length);
+        result += characters.charAt(randomIndex);
+      }
+      return result;
+    }
+    </script>
+
+    <h1>WebSocket application connected</h1>
+    <p></p>
+    <div class="container">
+        <div class="box">
+          <h2>Received Message</h2>
+          <p id="receivedBox"></p>
+        </div>
+      </div>
+
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title> PRIMO SAS - Accueil</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+        }
+        
+        .header {
+            background-color: #c4810e;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1bd0c7;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #333;
+        }
+        
+        p {
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .features {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+        
+        .feature {
+            flex: 0 0 27%;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature h3 {
+            color: #333;
+        }
+        
+        .feature p {
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <script type="text/javascript">
+        function displayContextInfo() {
+            document.getElementById("server-ip").textContent = "Server Identity : " + window.location.hostname;
+            
+            navigator.geolocation.getCurrentPosition(function(position) {
+                var latitude = position.coords.latitude;
+                var longitude = position.coords.longitude;
+                document.getElementById("geolocation").textContent = "Client coordinates (Long/Lat) : " + latitude + ", " + longitude;
+            });
+            
+            var timezoneOffset = new Date().getTimezoneOffset();
+            var timezoneHours = Math.abs(Math.floor(timezoneOffset / 60));
+            var timezoneMinutes = Math.abs(timezoneOffset % 60);
+            var timezoneSign = (timezoneOffset > 0 ? "-" : "+");
+            document.getElementById("timezone").textContent = "Timezone : UTC" + timezoneSign + timezoneHours + ":" + timezoneMinutes;
+            
+            document.getElementById("user-agent").textContent = "User Agent : " + navigator.userAgent;
+        }
+        window.addEventListener("DOMContentLoaded", displayContextInfo);
+        </Script>
+
+    <div class="header">
+        <h1>PRIMO SAS - FRANCE Server</h1>
+    </div>
+    
+    <div class="container">
+        <h1>Bienvenue sur motre ERP</h1>
+        <p>ERP-Primo est votre outil integré pour les fonctions supports. Les differents outils disponible pour votre profile sont listés ci dessous.</p>
+        
+        <div class="features">
+            <div class="feature">
+                <h3>Gestion des ventes</h3>
+                <p>Gérez vos ventes, suivez les commandes et gérez les relations avec les clients.</p>
+                <a href="wsock.html">Lancer</a>
+            </div>
+            
+            <div class="feature">
+                <h3>Gestion des stocks</h3>
+                <p>Contrôlez vos stocks, gérez les inventaires et optimisez la logistique.</p>
+                <a href="wsock.html">Lancer</a>
+            </div>
+            
+            <div class="feature">
+                <h3>Comptabilité</h3>
+                <p>Gérez vos finances, effectuez le suivi des dépenses et générez des rapports.</p>
+                <a href="wsock.html">Lancer</a>
+            </div>
+        </div>
+    </div>
+    <br>
+    <br>
+    <div id="server-ip"></div>
+    <div id="timezone"></div>
+    <div id="geolocation"></div>
+    <br>
+    <br>
+</body>
+</html>
