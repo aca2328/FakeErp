@@ -1,0 +1,146 @@
+# FakeErp: one Deployment + Service per site, plus an Ingress (AKO / Avi).
+# Set the image to the one you built and pushed: ./build.sh US && docker push ...
+# Readiness (not liveness) uses /health, so /health/fail removes a pod from the pool without restarting it.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: werp-us
+  labels: {app: werp, site: us}
+spec:
+  replicas: 3
+  selector:
+    matchLabels: {app: werp, site: us}
+  template:
+    metadata:
+      labels: {app: werp, site: us}
+    spec:
+      containers:
+        - name: werp
+          image: werp-us:latest
+          env:
+            - name: SITE
+              value: "US"
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet: {path: /health, port: 8080}
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 50m, memory: 32Mi}
+            limits: {cpu: 500m, memory: 64Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: werp-us
+spec:
+  selector: {app: werp, site: us}
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: werp-fr
+  labels: {app: werp, site: fr}
+spec:
+  replicas: 3
+  selector:
+    matchLabels: {app: werp, site: fr}
+  template:
+    metadata:
+      labels: {app: werp, site: fr}
+    spec:
+      containers:
+        - name: werp
+          image: werp-us:latest
+          env:
+            - name: SITE
+              value: "FR"
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet: {path: /health, port: 8080}
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 50m, memory: 32Mi}
+            limits: {cpu: 500m, memory: 64Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: werp-fr
+spec:
+  selector: {app: werp, site: fr}
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: werp-de
+  labels: {app: werp, site: de}
+spec:
+  replicas: 3
+  selector:
+    matchLabels: {app: werp, site: de}
+  template:
+    metadata:
+      labels: {app: werp, site: de}
+    spec:
+      containers:
+        - name: werp
+          image: werp-us:latest
+          env:
+            - name: SITE
+              value: "DE"
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet: {path: /health, port: 8080}
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 50m, memory: 32Mi}
+            limits: {cpu: 500m, memory: 64Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: werp-de
+spec:
+  selector: {app: werp, site: de}
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: werp
+spec:
+  ingressClassName: avi-lb
+  rules:
+    - host: erp-us.lab.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: {name: werp-us, port: {number: 80}}
+    - host: erp-fr.lab.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: {name: werp-fr, port: {number: 80}}
+    - host: erp-de.lab.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: {name: werp-de, port: {number: 80}}

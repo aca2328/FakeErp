@@ -54,12 +54,21 @@
         .feature p {
             color: #666;
         }
+
+        .lab {
+            margin-top: 20px;
+            background-color: #f9f9f9;
+        }
     </style>
 </head>
 <body>
     <script type="text/javascript">
         function displayContextInfo() {
-            document.getElementById("server-ip").textContent = "Server Identity : " + window.location.hostname;
+            // Backend actually serving this request (behind the VIP)
+            fetch("/info", {cache: "no-store"}).then(function(r) { return r.json(); }).then(function(i) {
+                document.getElementById("server-ip").textContent = "Server Identity : " + i.server_hostname + " (" + i.server_address + ")";
+                document.getElementById("client-ip").textContent = "Client IP seen by server : " + i.client_ip + (i.x_forwarded_for ? " / X-Forwarded-For : " + i.x_forwarded_for : "");
+            });
             
             // Geolocation is only available in secure contexts (HTTPS)
             if (navigator.geolocation) {
@@ -106,9 +115,19 @@
             </div>
         </div>
     </div>
+    <div class="container lab">
+        <h3>Lab tools</h3>
+        <a href="/info">/info</a> ·
+        <a href="/health">/health</a> (<a href="/health/fail">fail</a> / <a href="/health/ok">ok</a>) ·
+        <a href="/slow?ms=2000">/slow?ms=2000</a> ·
+        <a href="/error?code=503">/error?code=503</a> ·
+        <a href="/cpu?ms=500">/cpu?ms=500</a> ·
+        <a href="/search">/search &amp; /login (WAF)</a>
+    </div>
     <br>
     <br>
     <div id="server-ip"></div>
+    <div id="client-ip"></div>
     <div id="timezone"></div>
     <div id="geolocation"></div>
     <div id="user-agent"></div>

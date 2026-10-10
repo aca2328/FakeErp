@@ -88,6 +88,16 @@ func main() {
 	mux.HandleFunc("/favicon.ico", serveBytes("image/x-icon", favicon))
 	mux.HandleFunc("/sock", echoHandler)
 
+	mux.HandleFunc("/info", infoHandler(code))
+	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/health/fail", setHealth(false))
+	mux.HandleFunc("/health/ok", setHealth(true))
+	mux.HandleFunc("/slow", slowHandler)
+	mux.HandleFunc("/error", errorHandler)
+	mux.HandleFunc("/cpu", cpuHandler)
+	mux.HandleFunc("/search", wafHandler)
+	mux.HandleFunc("/login", wafHandler)
+
 	srv := &http.Server{Addr: ":8080", Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 	log.Fatal(srv.ListenAndServe())
 }
