@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
+    <meta charset="utf-8">
     <title> PRIMO SAS - Accueil</title>
     <style>
         body {
@@ -9,7 +10,7 @@
         }
         
         .header {
-            background-color: #0e9fc4;
+            background-color: {{.Color}};
             color: #fff;
             padding: 20px;
             text-align: center;
@@ -60,29 +61,29 @@
         function displayContextInfo() {
             document.getElementById("server-ip").textContent = "Server Identity : " + window.location.hostname;
             
-            navigator.geolocation.getCurrentPosition(function(position) {
-                var latitude = position.coords.latitude;
-                var longitude = position.coords.longitude;
-                document.getElementById("geolocation").textContent = "Client coordinates (Long/Lat) : " + latitude + ", " + longitude;
-            });
+            // Geolocation is only available in secure contexts (HTTPS)
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    document.getElementById("geolocation").textContent = "Client coordinates (Lat/Long) : " + position.coords.latitude + ", " + position.coords.longitude;
+                });
+            }
             
             var timezoneOffset = new Date().getTimezoneOffset();
-            var timezoneHours = Math.abs(Math.floor(timezoneOffset / 60));
-            var timezoneMinutes = Math.abs(timezoneOffset % 60);
+            var abs = Math.abs(timezoneOffset);
             var timezoneSign = (timezoneOffset > 0 ? "-" : "+");
-            document.getElementById("timezone").textContent = "Timezone : UTC" + timezoneSign + timezoneHours + ":" + timezoneMinutes;
+            document.getElementById("timezone").textContent = "Timezone : UTC" + timezoneSign + Math.floor(abs / 60) + ":" + String(abs % 60).padStart(2, "0");
             
             document.getElementById("user-agent").textContent = "User Agent : " + navigator.userAgent;
         }
         window.addEventListener("DOMContentLoaded", displayContextInfo);
-        </Script>
+        </script>
 
     <div class="header">
-        <h1>PRIMO SAS - USA Server</h1>
+        <h1>PRIMO SAS - {{.Name}} Server</h1>
     </div>
     
     <div class="container">
-        <h1>Bienvenue sur motre ERP</h1>
+        <h1>Bienvenue sur votre ERP</h1>
         <p>ERP-Primo est votre outil integré pour les fonctions supports. Les differents outils disponible pour votre profile sont listés ci dessous.</p>
         
         <div class="features">
@@ -110,6 +111,7 @@
     <div id="server-ip"></div>
     <div id="timezone"></div>
     <div id="geolocation"></div>
+    <div id="user-agent"></div>
     <br>
     <br>
 </body>

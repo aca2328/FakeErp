@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>WebSocket Example</title>
+    <style>
+    .container {
+      display: flex;
+    }
+
+    .box {
+      border: 5px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+      width: 600px;
+    }
+
+    #sentBox {
+      background:teal;
+      color: white;
+      font-weight: bold;
+    }
+
+    #receivedBox {
+      background:rgb(0, 0, 0);
+      color: white;
+      font-weight: bold;
+      font-size:large;
+    }
+      </style>  
+</head>
+<body>
+    
+    <script type="text/javascript">
+        // Follow the page's scheme/host/port so it works behind a VIP (80/443, TLS)
+        var wsScheme = window.location.protocol === "https:" ? "wss://" : "ws://";
+        var socket = new WebSocket(wsScheme + window.location.host + "/sock");
+        var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        var sender;
+
+        // Helper function to generate a random string
+        function generateRandomString(length) {
+            var result = "";
+            for (var i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        socket.onopen = function() {
+            console.log("Connected to WebSocket");
+            // Send a series of random characters
+            sender = setInterval(function() {
+                socket.send(generateRandomString(100));
+            }, 10);
+        };
+
+        socket.onmessage = function(event) {
+            document.getElementById("receivedBox").textContent = event.data;
+        };
+
+        socket.onclose = function() {
+            clearInterval(sender);
+            console.log("Disconnected from WebSocket");
+        };
+
+        socket.onerror = function(event) {
+            console.error("WebSocket error: ", event);
+        };
+    </script>
+
+    <h1>WebSocket application connected</h1>
+    <p></p>
+    <div class="container">
+        <div class="box">
+          <h2>Received Message</h2>
+          <p id="receivedBox"></p>
+        </div>
+      </div>
+
+</body>
+</html>
