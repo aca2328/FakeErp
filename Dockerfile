@@ -10,5 +10,5 @@ FROM scratch
 ARG SITE=US
 ENV SITE=${SITE}
 COPY --from=builder /erpsock /erpsock
-EXPOSE 8080
+EXPOSE 8080 8443
 ENTRYPOINT ["/erpsock"]

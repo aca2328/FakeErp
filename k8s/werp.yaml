@@ -13,6 +13,7 @@ spec:
     matchLabels: {app: werp, site: us}
   template:
     metadata:
+      annotations: {prometheus.io/scrape: "true", prometheus.io/port: "8080", prometheus.io/path: /metrics}
       labels: {app: werp, site: us}
     spec:
       containers:
@@ -23,6 +24,7 @@ spec:
               value: "US"
           ports:
             - containerPort: 8080
+            - containerPort: 8443
           readinessProbe:
             httpGet: {path: /health, port: 8080}
             periodSeconds: 5
@@ -37,8 +39,12 @@ metadata:
 spec:
   selector: {app: werp, site: us}
   ports:
-    - port: 80
+    - name: http
+      port: 80
       targetPort: 8080
+    - name: https
+      port: 443
+      targetPort: 8443
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -51,6 +57,7 @@ spec:
     matchLabels: {app: werp, site: fr}
   template:
     metadata:
+      annotations: {prometheus.io/scrape: "true", prometheus.io/port: "8080", prometheus.io/path: /metrics}
       labels: {app: werp, site: fr}
     spec:
       containers:
@@ -61,6 +68,7 @@ spec:
               value: "FR"
           ports:
             - containerPort: 8080
+            - containerPort: 8443
           readinessProbe:
             httpGet: {path: /health, port: 8080}
             periodSeconds: 5
@@ -75,8 +83,12 @@ metadata:
 spec:
   selector: {app: werp, site: fr}
   ports:
-    - port: 80
+    - name: http
+      port: 80
       targetPort: 8080
+    - name: https
+      port: 443
+      targetPort: 8443
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -89,6 +101,7 @@ spec:
     matchLabels: {app: werp, site: de}
   template:
     metadata:
+      annotations: {prometheus.io/scrape: "true", prometheus.io/port: "8080", prometheus.io/path: /metrics}
       labels: {app: werp, site: de}
     spec:
       containers:
@@ -99,6 +112,7 @@ spec:
               value: "DE"
           ports:
             - containerPort: 8080
+            - containerPort: 8443
           readinessProbe:
             httpGet: {path: /health, port: 8080}
             periodSeconds: 5
@@ -113,8 +127,12 @@ metadata:
 spec:
   selector: {app: werp, site: de}
   ports:
-    - port: 80
+    - name: http
+      port: 80
       targetPort: 8080
+    - name: https
+      port: 443
+      targetPort: 8443
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

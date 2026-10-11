@@ -33,10 +33,10 @@
     
     <script type="text/javascript">
         // Follow the page's scheme/host/port so it works behind a VIP (80/443, TLS)
-        var wsScheme = window.location.protocol === "https:" ? "wss://" : "ws://";
-        var socket = new WebSocket(wsScheme + window.location.host + "/sock");
+        var wsUrl = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/sock?hello=1";
         var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        var sender;
+        var stats = {sent: 0, received: 0, connects: 0, rtt: 0, server: "-", since: null};
+        var socket, sender;
 
         // Helper function to generate a random string
         function generateRandomString(length) {
@@ -47,30 +47,55 @@
             return result;
         }
 
-        socket.onopen = function() {
-            console.log("Connected to WebSocket");
-            // Send a series of random characters
-            sender = setInterval(function() {
-                socket.send(generateRandomString(100));
-            }, 10);
-        };
+        function render(state) {
+            if (state) document.getElementById("state").textContent = state;
+            document.getElementById("stats").textContent =
+                "Backend : " + stats.server +
+                " | Connected since : " + (stats.since ? stats.since.toLocaleTimeString() : "-") +
+                " | Connections : " + stats.connects +
+                " | Sent : " + stats.sent + " | Received : " + stats.received +
+                " | RTT : " + stats.rtt.toFixed(1) + " ms";
+        }
 
-        socket.onmessage = function(event) {
-            document.getElementById("receivedBox").textContent = event.data;
-        };
-
-        socket.onclose = function() {
-            clearInterval(sender);
-            console.log("Disconnected from WebSocket");
-        };
-
-        socket.onerror = function(event) {
-            console.error("WebSocket error: ", event);
-        };
+        // Each message carries its send time ("<ms>|<random>") to measure round-trip time
+        function connect() {
+            socket = new WebSocket(wsUrl);
+            socket.onopen = function() {
+                stats.connects++;
+                stats.since = new Date();
+                render("Connected");
+                sender = setInterval(function() {
+                    socket.send(performance.now() + "|" + generateRandomString(100));
+                    stats.sent++;
+                }, 10);
+            };
+            socket.onmessage = function(event) {
+                if (event.data.indexOf("HELLO ") === 0) {
+                    stats.server = event.data.substring(6);
+                    return render();
+                }
+                stats.received++;
+                stats.rtt = performance.now() - parseFloat(event.data);
+                document.getElementById("receivedBox").textContent = event.data.split("|")[1];
+                if (stats.received % 10 === 0) render();
+            };
+            socket.onclose = function() {
+                clearInterval(sender);
+                stats.server = "-";
+                stats.since = null;
+                render("Disconnected - reconnecting in 1 s");
+                setTimeout(connect, 1000);
+            };
+            socket.onerror = function(event) {
+                console.error("WebSocket error: ", event);
+            };
+        }
+        connect();
     </script>
 
-    <h1>WebSocket application connected</h1>
-    <p></p>
+    <h1>WebSocket application - <span id="state">Connecting</span></h1>
+    <p id="stats"></p>
+    <p><a href="/">Accueil</a></p>
     <div class="container">
         <div class="box">
           <h2>Received Message</h2>

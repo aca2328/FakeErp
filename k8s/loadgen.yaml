@@ -1,0 +1,14 @@
+# Traffic generator: same image, "loadgen" subcommand. Set the VIP URL.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: werp-loadgen
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: loadgen
+          image: werp-us:latest
+          args: ["loadgen", "-c", "20", "-d", "10m", "-k", "http://erp-us.lab.local"]

@@ -39,6 +39,8 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
+// echoHandler echoes every message back. With ?hello=1 it first sends
+// "HELLO <hostname>" so the client knows which backend holds the socket.
 func echoHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -46,6 +48,14 @@ func echoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.Close()
+	wsActive.Add(1)
+	defer wsActive.Add(-1)
+
+	if r.URL.Query().Get("hello") != "" {
+		if err := conn.WriteMessage(websocket.TextMessage, []byte("HELLO "+hostname)); err != nil {
+			return
+		}
+	}
 
 	for {
 		mt, message, err := conn.ReadMessage()
@@ -55,6 +65,7 @@ func echoHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
+		wsMessages.Add(1)
 		if err := conn.WriteMessage(mt, message); err != nil {
 			log.Println("Failed to write message:", err)
 			return
@@ -70,17 +81,27 @@ func serveBytes(contentType string, body []byte) http.HandlerFunc {
 	}
 }
 
+var (
+	siteCode string
+	siteInfo site
+)
+
 func main() {
-	code := strings.ToUpper(os.Getenv("SITE"))
-	s, ok := sites[code]
-	if !ok {
-		code, s = "US", sites["US"]
+	if len(os.Args) > 1 && os.Args[1] == "loadgen" {
+		loadgen(os.Args[2:])
+		return
 	}
+
+	siteCode = strings.ToUpper(os.Getenv("SITE"))
+	s, ok := sites[siteCode]
+	if !ok {
+		siteCode, s = "US", sites["US"]
+	}
+	siteInfo = s
 	var buf bytes.Buffer
 	if err := template.Must(template.New("erp").Parse(erpTmpl)).Execute(&buf, s); err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("Starting ERP site %s on :8080", code)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/{$}", serveBytes("text/html; charset=utf-8", buf.Bytes()))
@@ -88,7 +109,7 @@ func main() {
 	mux.HandleFunc("/favicon.ico", serveBytes("image/x-icon", favicon))
 	mux.HandleFunc("/sock", echoHandler)
 
-	mux.HandleFunc("/info", infoHandler(code))
+	mux.HandleFunc("/info", infoHandler)
 	mux.HandleFunc("/health", healthHandler)
 	mux.HandleFunc("/health/fail", setHealth(false))
 	mux.HandleFunc("/health/ok", setHealth(true))
@@ -97,7 +118,16 @@ func main() {
 	mux.HandleFunc("/cpu", cpuHandler)
 	mux.HandleFunc("/search", wafHandler)
 	mux.HandleFunc("/login", wafHandler)
+	mux.HandleFunc("/session", sessionHandler)
+	mux.HandleFunc("/metrics", metricsHandler)
+	for _, m := range modules {
+		mux.HandleFunc("/"+m.Path, moduleHandler(m))
+		mux.HandleFunc("/api/"+m.Path, moduleAPIHandler(m))
+	}
 
-	srv := &http.Server{Addr: ":8080", Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+	handler := observe(mux)
+	go serveTLS(handler)
+	log.Printf("Starting ERP site %s on :8080 (HTTP) and :8443 (HTTPS/HTTP2)", siteCode)
+	srv := &http.Server{Addr: ":8080", Handler: handler, ReadHeaderTimeout: 10 * time.Second}
 	log.Fatal(srv.ListenAndServe())
 }

@@ -42,38 +42,36 @@ func clamp(v, min, max int) int {
 
 // infoHandler reports which backend served the request and what the load
 // balancer passed along (client IP, X-Forwarded-* headers, ...).
-func infoHandler(code string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		serverAddr := ""
-		if a, ok := r.Context().Value(http.LocalAddrContextKey).(net.Addr); ok {
-			serverAddr = a.String()
-		}
-		clientIP, _, _ := net.SplitHostPort(r.RemoteAddr)
-		headers := map[string]string{}
-		for k := range r.Header {
-			headers[k] = r.Header.Get(k)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Cache-Control", "no-store")
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		enc.Encode(map[string]any{
-			"site":              code,
-			"server_hostname":   hostname,
-			"server_address":    serverAddr,
-			"client_ip":         clientIP,
-			"x_forwarded_for":   r.Header.Get("X-Forwarded-For"),
-			"x_forwarded_proto": r.Header.Get("X-Forwarded-Proto"),
-			"host":              r.Host,
-			"method":            r.Method,
-			"uri":               r.RequestURI,
-			"proto":             r.Proto,
-			"tls":               r.TLS != nil,
-			"healthy":           healthy.Load(),
-			"time":              time.Now().Format(time.RFC3339Nano),
-			"headers":           headers,
-		})
+func infoHandler(w http.ResponseWriter, r *http.Request) {
+	serverAddr := ""
+	if a, ok := r.Context().Value(http.LocalAddrContextKey).(net.Addr); ok {
+		serverAddr = a.String()
 	}
+	clientIP, _, _ := net.SplitHostPort(r.RemoteAddr)
+	headers := map[string]string{}
+	for k := range r.Header {
+		headers[k] = r.Header.Get(k)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	enc.Encode(map[string]any{
+		"site":              siteCode,
+		"server_hostname":   hostname,
+		"server_address":    serverAddr,
+		"client_ip":         clientIP,
+		"x_forwarded_for":   r.Header.Get("X-Forwarded-For"),
+		"x_forwarded_proto": r.Header.Get("X-Forwarded-Proto"),
+		"host":              r.Host,
+		"method":            r.Method,
+		"uri":               r.RequestURI,
+		"proto":             r.Proto,
+		"tls":               r.TLS != nil,
+		"healthy":           healthy.Load(),
+		"time":              time.Now().Format(time.RFC3339Nano),
+		"headers":           headers,
+	})
 }
 
 // healthHandler answers health monitors; /health/fail and /health/ok flip it.
@@ -139,10 +137,16 @@ var wafTmpl = template.Must(template.New("waf").Parse(`<!DOCTYPE html>
 
 func wafHandler(w http.ResponseWriter, r *http.Request) {
 	data := struct{ Q, Login, Host string }{Q: r.FormValue("q"), Host: hostname}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if r.URL.Path == "/login" && r.Method == http.MethodPost {
+		// demo/demo opens a session (see /session); anything else is rejected
+		if r.FormValue("user") == "demo" && r.FormValue("password") == "demo" {
+			newSession(w, "demo")
+			http.Redirect(w, r, "/session", http.StatusSeeOther)
+			return
+		}
 		data.Login = r.FormValue("user")
 		w.WriteHeader(http.StatusUnauthorized)
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	wafTmpl.Execute(w, data)
 }
